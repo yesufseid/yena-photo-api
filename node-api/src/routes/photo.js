@@ -9,41 +9,24 @@ const pool = require("../db");
 const { extractFaces } = require("../services/python");
 
 router.post("/", upload.single("image"), async (req, res) => {
-  const { id } = req.body;
+  const { event_id } = req.body;
   try {
     const imageBuffer = req.file.buffer;
+    const faceData = await extractFaces(imageBuffer);
+
     const photoResult = await pool.query(
-      `
-      INSERT INTO photos(image_data,events_id)
-      VALUES($1, $2)
-      RETURNING id
-      `,
-      [imageBuffer,id]
+      `INSERT INTO photos (event_id, telegram_file_id, faces_count, processed)
+       VALUES ($1, $2, $3, true)
+       RETURNING id`,
+      [event_id, "api_upload_" + Date.now(), faceData.faces.length]
     );
 
     const photoId = photoResult.rows[0].id;
 
-    const faceData = await extractFaces(imageBuffer);
-
     for (const face of faceData.faces) {
       await pool.query(
-        `
-        INSERT INTO faces(
-          photo_id,
-          embedding,
-          bbox
-        )
-        VALUES(
-          $1,
-          $2,
-          $3
-        )
-        `,
-        [
-          photoId,
-          JSON.stringify(face.embedding),
-          JSON.stringify(face.bbox),
-        ]
+        `INSERT INTO face_embeddings (photo_id, embedding, bbox) VALUES ($1, $2::vector, $3)`,
+        [photoId, JSON.stringify(face.embedding), JSON.stringify(face.bbox)]
       );
     }
 
@@ -54,10 +37,7 @@ router.post("/", upload.single("image"), async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
