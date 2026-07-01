@@ -17,7 +17,8 @@ function clearState(chatId) {
 }
 
 const webAppUrl = () => {
-  const base = process.env.BASE_URL || "http://localhost:3001";
+  const base = process.env.BASE_URL;
+  if (!base || !base.startsWith("https://")) return null;
   return base + "/app";
 };
 
@@ -48,23 +49,28 @@ function registerCommands(bot) {
       }
     }
 
-    ctx.reply(
+    const waUrl = webAppUrl();
+    const welcomeMsg =
       "Welcome to Yena Photo Bot! 📸\n\n" +
-        "I find your photos from events using face recognition.\n\n" +
-        "Commands:\n" +
-        "/new - Create a new event and upload photos\n" +
-        "/find [code] - Find your photos (with optional event code)\n" +
-        "/register - Register your face for quick access\n" +
-        "/myphotos - View all photos of you\n" +
-        "/updateface - Update your registered face",
-      {
+      "I find your photos from events using face recognition.\n\n" +
+      "Commands:\n" +
+      "/new - Create a new event and upload photos\n" +
+      "/find [code] - Find your photos (with optional event code)\n" +
+      "/register - Register your face for quick access\n" +
+      "/myphotos - View all photos of you\n" +
+      "/updateface - Update your registered face";
+
+    if (waUrl) {
+      ctx.reply(welcomeMsg, {
         reply_markup: {
           inline_keyboard: [
-            [{ text: "🔍 Open Yena Photo", web_app: { url: webAppUrl() } }],
+            [{ text: "🔍 Open Yena Photo", web_app: { url: waUrl } }],
           ],
         },
-      }
-    );
+      });
+    } else {
+      ctx.reply(welcomeMsg);
+    }
   });
 
   bot.command("new", async (ctx) => {

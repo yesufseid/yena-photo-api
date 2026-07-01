@@ -189,17 +189,19 @@ async function notifyRegisteredUsersOfNewPhotos(eventId, newPhotoIds) {
 
   for (const row of matches.rows) {
     try {
-      await bot.telegram.sendMessage(
-        row.user_id,
-        `🔔 New photos in "${eventName}"!\n\nYou appear in ${row.match_count} new photos.\n\nOpen Yena Photo to find them.`,
-        {
+      const msg = `🔔 New photos in "${eventName}"!\n\nYou appear in ${row.match_count} new photos.\n\nOpen Yena Photo to find them.`;
+      const base = process.env.BASE_URL;
+      if (base) {
+        await bot.telegram.sendMessage(row.user_id, msg, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: "🔍 Open Yena Photo", url: (process.env.BASE_URL || "http://localhost:3001") + "/app" }],
+              [{ text: "🔍 Open Yena Photo", url: base + "/app" }],
             ],
           },
-        }
-      );
+        });
+      } else {
+        await bot.telegram.sendMessage(row.user_id, msg);
+      }
     } catch (e) {
       console.error("Notify error for user", row.user_id, e.message);
     }
