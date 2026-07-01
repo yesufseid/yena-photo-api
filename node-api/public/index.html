@@ -230,11 +230,6 @@ async function init() {
     return;
   }
 
-  if (!telegramId) {
-    document.getElementById('screen-init').innerHTML = '<div style="padding:40px;text-align:center"><p>Could not identify user.</p></div>';
-    return;
-  }
-
   window._tgId = parseInt(telegramId);
   document.getElementById('userInfo').textContent = 'Hi, ' + firstName;
 

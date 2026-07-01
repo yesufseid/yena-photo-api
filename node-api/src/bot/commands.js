@@ -50,27 +50,72 @@ function registerCommands(bot) {
     }
 
     const waUrl = webAppUrl();
+    const baseUrl = process.env.BASE_URL || "";
+    const menuKeyboard = {
+      keyboard: [
+        [{ text: "/find"}, { text: "/myphotos" }],
+        [{ text: "/new"}, { text: "/register" }],
+        [{ text: "/updateface"}, { text: "/menu" }],
+      ],
+      resize_keyboard: true,
+    };
+
     const welcomeMsg =
       "Welcome to Yena Photo Bot! 📸\n\n" +
       "I find your photos from events using face recognition.\n\n" +
-      "Commands:\n" +
+      "Tap a button below or type a command:\n" +
       "/new - Create a new event and upload photos\n" +
-      "/find [code] - Find your photos (with optional event code)\n" +
+      "/find [code] - Find your photos (with event code)\n" +
       "/register - Register your face for quick access\n" +
       "/myphotos - View all photos of you\n" +
-      "/updateface - Update your registered face";
+      "/updateface - Update your registered face\n" +
+      "/menu - Open Yena Photo";
+
+    ctx.reply(welcomeMsg, { reply_markup: menuKeyboard });
 
     if (waUrl) {
-      ctx.reply(welcomeMsg, {
+      ctx.reply("🔍 Find your photos:", {
         reply_markup: {
           inline_keyboard: [
             [{ text: "🔍 Open Yena Photo", web_app: { url: waUrl } }],
           ],
         },
       });
-    } else {
-      ctx.reply(welcomeMsg);
+    } else if (baseUrl) {
+      ctx.reply("🔍 Find your photos:", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🔍 Open Yena Photo", url: baseUrl + "/app" }],
+          ],
+        },
+      });
     }
+  });
+
+  bot.command("menu", async (ctx) => {
+    const waUrl = webAppUrl();
+    const baseUrl = process.env.BASE_URL || "";
+
+    if (waUrl) {
+      return ctx.reply("🔍 Find your photos:", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🔍 Open Yena Photo", web_app: { url: waUrl } }],
+          ],
+        },
+      });
+    }
+    if (baseUrl) {
+      return ctx.reply("🔍 Find your photos:", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🔍 Open Yena Photo", url: baseUrl + "/app" }],
+          ],
+        },
+      });
+    }
+    ctx.reply("Set BASE_URL environment variable to enable the Mini App.");
+  });
   });
 
   bot.command("new", async (ctx) => {
