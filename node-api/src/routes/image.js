@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const path = require("path");
+const fs = require("fs");
 const pool = require("../db");
 const axios = require("axios");
 
@@ -14,6 +16,15 @@ router.get("/:id", async (req, res) => {
   }
 
   const fileId = result.rows[0].telegram_file_id;
+
+  if (fileId && fileId.startsWith("local::")) {
+    const filename = fileId.slice(7);
+    const filepath = path.join(__dirname, "..", "..", "uploads", filename);
+    if (fs.existsSync(filepath)) {
+      return res.sendFile(filepath);
+    }
+    return res.status(404).send("Image not found");
+  }
 
   if (fileId && !fileId.startsWith("api_upload_")) {
     try {

@@ -164,6 +164,48 @@ async function getEventByCode(code) {
   return r.rows[0] || null;
 }
 
+async function getEventById(id) {
+  const r = await pool.query(`SELECT * FROM events WHERE id = $1`, [id]);
+  return r.rows[0] || null;
+}
+
+async function notifyRegisteredUsersOfNewPhotos(eventId, newPhotoIds) {
+  if (!newPhotoIds || !newPhotoIds.length) return;
+
+  const matches = await pool.query(`
+    SELECT DISTINCT fr.user_id, COUNT(*)::int AS match_count
+    FROM face_embeddings fe
+    JOIN face_registrations fr ON 1 - (fe.embedding <=> fr.embedding) > 0.5
+    WHERE fe.photo_id = ANY($1::uuid[])
+    GROUP BY fr.user_id
+  `, [newPhotoIds]);
+
+  if (!matches.rows.length) return;
+
+  const event = await getEventById(eventId);
+  const eventName = event ? event.name : "an event";
+
+  const { bot } = require("../bot");
+
+  for (const row of matches.rows) {
+    try {
+      await bot.telegram.sendMessage(
+        row.user_id,
+        `🔔 New photos in "${eventName}"!\n\nYou appear in ${row.match_count} new photos.\n\nOpen Yena Photo to find them.`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "🔍 Open Yena Photo", url: (process.env.BASE_URL || "http://localhost:3001") + "/app" }],
+            ],
+          },
+        }
+      );
+    } catch (e) {
+      console.error("Notify error for user", row.user_id, e.message);
+    }
+  }
+}
+
 module.exports = {
   getOrCreateUser,
   generateEventCode,
@@ -180,4 +222,6 @@ module.exports = {
   markPhotosAsSeen,
   getNewPhotos,
   getEventByCode,
+  getEventById,
+  notifyRegisteredUsersOfNewPhotos,
 };

@@ -16,6 +16,11 @@ function clearState(chatId) {
   states.delete(chatId);
 }
 
+const webAppUrl = () => {
+  const base = process.env.BASE_URL || "http://localhost:3001";
+  return base + "/app";
+};
+
 function registerCommands(bot) {
   bot.start(async (ctx) => {
     const text = ctx.message.text.trim();
@@ -51,7 +56,14 @@ function registerCommands(bot) {
         "/find [code] - Find your photos (with optional event code)\n" +
         "/register - Register your face for quick access\n" +
         "/myphotos - View all photos of you\n" +
-        "/updateface - Update your registered face"
+        "/updateface - Update your registered face",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🔍 Open Yena Photo", web_app: { url: webAppUrl() } }],
+          ],
+        },
+      }
     );
   });
 
@@ -292,8 +304,76 @@ function registerCommands(bot) {
     state.step = "NEW_PHOTOS";
     await ctx.answerCbQuery(`Visibility set to ${visibility}`);
     await ctx.reply(
-      `"${state.data.eventName}" (${visibility}). Now upload all event photos. Send photos or type "done" when finished.`
+      `"${state.data.eventName}" (${visibility}). How do you want to upload photos?`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "📎 Upload in Chat", callback_data: "upload_chat" },
+              { text: "🌐 Upload via Web", callback_data: "upload_web" },
+            ],
+          ],
+        },
+      }
     );
+  });
+
+  bot.action("upload_chat", async (ctx) => {
+    const state = getState(ctx.chat.id);
+    if (!state || state.step !== "NEW_PHOTOS") {
+      return ctx.reply("Session expired. Try /new again.");
+    }
+    await ctx.answerCbQuery();
+    await ctx.reply(
+      `Send photos now. Type "done" when finished.`
+    );
+  });
+
+  bot.action("upload_web", async (ctx) => {
+    const state = getState(ctx.chat.id);
+    if (!state || state.step !== "NEW_PHOTOS") {
+      return ctx.reply("Session expired. Try /new again.");
+    }
+    await ctx.answerCbQuery();
+    await ctx.reply("Creating event and preparing upload page...");
+
+    try {
+      const code = await svc.generateEventCode();
+      const event = await svc.createEvent(
+        state.data.eventName,
+        code,
+        state.data.userId,
+        state.data.visibility || "public"
+      );
+
+      const { createSession } = require("../routes/upload");
+      const token = createSession(ctx.chat.id, state.data.userId, event.id, state.data.eventName);
+
+      const baseUrl = process.env.BASE_URL || "http://localhost:3001";
+      const uploadUrl = `${baseUrl}/upload/${token}`;
+
+      const botInfo = await ctx.telegram.getMe();
+      const shareLink = `https://t.me/${botInfo.username}?start=${code}`;
+
+      await ctx.reply(
+        `🌐 Upload photos for "${state.data.eventName}"\n\n` +
+        `Open the link below to upload multiple photos at once.\n` +
+        `When you're done, you'll get a confirmation here.\n\n` +
+        `Event Code: ${code}\nShare: ${shareLink}`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "🌐 Open Upload Page", url: uploadUrl }],
+            ],
+          },
+        }
+      );
+    } catch (e) {
+      console.error("Web upload setup error:", e);
+      await ctx.reply("Something went wrong. Try /new again.");
+    }
+
+    clearState(ctx.chat.id);
   });
 
   bot.action(/cb_(.+)/, async (ctx) => {
@@ -314,6 +394,47 @@ function registerCommands(bot) {
   bot.on("callback_query", async (ctx) => {
     await ctx.answerCbQuery();
   });
+
+  bot.action(/deliver_(.+)/, async (ctx) => {
+    const token = ctx.match[1];
+    const { searchResults } = require("../services/search-store");
+    const entry = searchResults.get(token);
+    if (!entry || entry.delivered) {
+      return ctx.reply("Results expired. Search again in the Mini App.");
+    }
+
+    entry.delivered = true;
+    searchResults.delete(token);
+
+    const { results } = entry;
+    const total = results.length;
+
+    await ctx.answerCbQuery(`Sending ${total} photos...`);
+    await ctx.reply(`📸 Sending ${total} photos...`);
+
+    let sent = 0;
+    for (const photo of results.slice(0, 10)) {
+      try {
+        if (photo.telegram_file_id.startsWith("local::")) {
+          const filename = photo.telegram_file_id.slice(7);
+          const filepath = require("path").join(__dirname, "..", "..", "uploads", filename);
+          await ctx.replyWithPhoto({ source: filepath });
+        } else {
+          await ctx.replyWithPhoto(photo.telegram_file_id);
+        }
+        sent++;
+      } catch (e) {
+        console.error("Failed to send photo:", e.message);
+      }
+    }
+
+    if (total > 10) {
+      await ctx.reply(`Showing ${sent} of ${total} photos.`);
+    }
+
+    const svc_ = require("./services");
+    await svc_.markPhotosAsSeen(entry.telegramId, results.map((p) => p.id));
+  });
 }
 
 async function processEvent(ctx, data) {
@@ -321,14 +442,20 @@ async function processEvent(ctx, data) {
   const event = await svc.createEvent(data.eventName, code, data.userId, data.visibility || "public");
 
   let processed = 0;
+  const newPhotoIds = [];
   for (const fileId of data.fileIds) {
     try {
-      await svc.processPhoto(fileId, event.id);
+      const result = await svc.processPhoto(fileId, event.id);
       processed++;
+      if (result.photoId) newPhotoIds.push(result.photoId);
     } catch (e) {
       console.error(`Failed to process photo ${fileId}:`, e.message);
     }
   }
+
+  svc.notifyRegisteredUsersOfNewPhotos(event.id, newPhotoIds).catch(e =>
+    console.error("Notification error:", e)
+  );
 
   clearState(ctx.chat.id);
 
