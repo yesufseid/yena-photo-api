@@ -225,11 +225,9 @@ async function init() {
     }
   }
 
-  // Fallback for dev: prompt or query param
   if (!telegramId) {
-    const params = new URLSearchParams(window.location.search);
-    telegramId = params.get('uid') || prompt('Enter your Telegram ID (for dev):');
-    firstName = params.get('name') || 'User';
+    document.getElementById('screen-init').innerHTML = '<div style="padding:40px;text-align:center"><p>Open this page from the Telegram bot.</p></div>';
+    return;
   }
 
   if (!telegramId) {
