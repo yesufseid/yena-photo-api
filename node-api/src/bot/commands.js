@@ -17,7 +17,7 @@ function clearState(chatId) {
 }
 
 const webAppUrl = () => {
-  const base = process.env.BASE_URL;
+  const base = process.env.BASE_URL?.replace(/\/+$/, "");
   if (!base || !base.startsWith("https://")) return null;
   return base + "/app";
 };
