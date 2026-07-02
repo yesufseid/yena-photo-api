@@ -94,7 +94,6 @@ function registerCommands(bot) {
 
   bot.command("menu", async (ctx) => {
     const waUrl = webAppUrl();
-    const baseUrl = process.env.BASE_URL || "";
 
     if (waUrl) {
       return ctx.reply("🔍 Find your photos:", {
@@ -105,16 +104,9 @@ function registerCommands(bot) {
         },
       });
     }
-    if (baseUrl) {
-      return ctx.reply("🔍 Find your photos:", {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "🔍 Open Yena Photo", url: baseUrl + "/app" }],
-          ],
-        },
-      });
-    }
-    ctx.reply("Set BASE_URL environment variable to enable the Mini App.");
+    ctx.reply(
+      "❌ BASE_URL environment variable is not configured or must use HTTPS for Mini App."
+    );
   });
 
   bot.command("new", async (ctx) => {
