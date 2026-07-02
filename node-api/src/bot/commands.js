@@ -116,7 +116,6 @@ function registerCommands(bot) {
     }
     ctx.reply("Set BASE_URL environment variable to enable the Mini App.");
   });
-  });
 
   bot.command("new", async (ctx) => {
     const user = await svc.getOrCreateUser(
