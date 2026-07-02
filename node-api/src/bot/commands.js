@@ -85,7 +85,7 @@ function registerCommands(bot) {
       ctx.reply("🔍 Find your photos:", {
         reply_markup: {
           inline_keyboard: [
-            [{ text: "🔍 Open Yena Photo", url: baseUrl + "/app" }],
+            [{ text: "🔍 Open Yena Photo", url: baseUrl}],
           ],
         },
       });
