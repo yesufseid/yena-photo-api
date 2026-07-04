@@ -1,0 +1,77 @@
+# v0 sandbox internal files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+
+# Environment variables
+.env*.local
+
+# Common ignores
+node_modules
+.next/
+.DS_Store
+
+
+
+
+# CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+# -- Users table
+# CREATE TABLE users (
+#     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+#     email VARCHAR(255) NOT NULL UNIQUE,
+#     password VARCHAR(255) NOT NULL,
+#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# );
+
+# -- Photos table
+# CREATE TABLE photos (
+#     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+#     image_data BYTEA NOT NULL,
+#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# );
+
+# -- Profiles table
+# CREATE TABLE profiles (
+#     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+#     user_id UUID NOT NULL UNIQUE,
+#     name VARCHAR(255) NOT NULL,
+#     email VARCHAR(255) NOT NULL,
+#     phone VARCHAR(20),
+#     photo UUID,
+#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+#     CONSTRAINT fk_profile_user
+#         FOREIGN KEY (user_id)
+#         REFERENCES users(id)
+#         ON DELETE CASCADE,
+
+#     CONSTRAINT fk_profile_photo
+#         FOREIGN KEY (photo)
+#         REFERENCES photos(id)
+#         ON DELETE SET NULL
+# );
+
+# -- Events table
+# CREATE TABLE events (
+#     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+#     user_id UUID NOT NULL,
+#     name VARCHAR(255) NOT NULL,
+#     event_date DATE NOT NULL,
+#     description TEXT,
+#     cover_photo UUID,
+#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+#     CONSTRAINT fk_event_user
+#         FOREIGN KEY (user_id)
+#         REFERENCES users(id)
+#         ON DELETE CASCADE,
+
+#     CONSTRAINT fk_event_cover_photo
+#         FOREIGN KEY (cover_photo)
+#         REFERENCES photos(id)
+#         ON DELETE SET NULL
+# );

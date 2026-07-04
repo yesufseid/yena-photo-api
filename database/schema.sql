@@ -64,3 +64,12 @@ CREATE INDEX idx_face_registrations ON face_registrations USING ivfflat (embeddi
 CREATE INDEX idx_photos_event ON photos(event_id);
 CREATE INDEX idx_user_photo_views_user ON user_photo_views(user_id);
 CREATE INDEX idx_events_code ON events(code);
+
+CREATE TABLE user_photos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id BIGINT NOT NULL REFERENCES users(telegram_id),
+    telegram_file_id TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_photos_user ON user_photos(user_id);

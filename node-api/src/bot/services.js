@@ -87,7 +87,7 @@ async function processPhoto(fileId, eventId) {
 
 async function searchPhotos(embedding, eventId = null, limit = 10) {
   let query = `
-    SELECT DISTINCT ON (p.id) p.id, p.telegram_file_id, p.event_id,
+    SELECT DISTINCT ON (p.id) p.id, p.telegram_file_id, p.event_id, p.created_at,
       1 - (fe.embedding <=> $1::vector) AS similarity
     FROM face_embeddings fe
     JOIN photos p ON p.id = fe.photo_id
