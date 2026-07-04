@@ -24,7 +24,8 @@ function registerCommands(bot) {
     );
     clearState(ctx.chat.id);
 
-    const waUrl = (process.env.BASE_URL || "http://localhost:3001").replace(/\/+$/, "") + "/app";
+    const baseUrl = (process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+    const waUrl = baseUrl + "/" + ctx.from.id;
 
     const keyboard = {
       keyboard: [

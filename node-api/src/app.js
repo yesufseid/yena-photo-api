@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const path = require("path");
 const cors = require("cors");
 const photoRoute = require("./routes/photo");
 const searchRoute = require("./routes/search");
@@ -20,7 +19,8 @@ app.use("/upload", uploadRoute);
 app.use("/api", apiRoute);
 
 app.get("/app", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+  const frontend = process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:3000";
+  res.redirect(frontend);
 });
 
 const port = process.env.PORT || 3001;

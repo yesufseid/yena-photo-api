@@ -195,7 +195,7 @@ async function notifyRegisteredUsersOfNewPhotos(eventId, newPhotoIds) {
         await bot.telegram.sendMessage(row.user_id, msg, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: "🔍 Open Yena Photo", url: base + "/app" }],
+              [{ text: "🔍 Open Yena Photo", url: base + "/" + row.user_id }],
             ],
           },
         });
