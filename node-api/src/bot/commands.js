@@ -65,7 +65,7 @@ function registerCommands(bot) {
       clearState(ctx.chat.id);
       ctx.reply("Photo saved! ✅");
     } catch (e) {
-      console.error("Upload error:", e);
+      console.error("Upload error:", e.message);
       ctx.reply("Failed to save photo. Try again.");
     }
   });

@@ -195,16 +195,18 @@ function closeApp() {
   }
 
   if (!telegramId) {
-    telegramId = prompt('Enter your Telegram ID:');
-    if (!telegramId) {
-      document.getElementById('greeting').textContent = 'Welcome!';
-      showScreen('screen-home');
-      return;
+    const params = new URLSearchParams(window.location.search);
+    const urlId = params.get('telegram_id');
+    if (urlId) {
+      telegramId = parseInt(urlId);
     }
   }
 
-  document.getElementById('greeting').textContent = 'Hi, ' + (firstName || 'there') + '!';
-  document.getElementById('userInfo').textContent = 'Hi, ' + (firstName || '');
+  if (telegramId) {
+    document.getElementById('greeting').textContent = 'Hi, ' + (firstName || 'there') + '!';
+    document.getElementById('userInfo').textContent = 'Hi, ' + (firstName || '');
+  }
+
   showScreen('screen-home');
 })();
 
@@ -215,7 +217,7 @@ async function startSearch() {
 
   const formData = new FormData();
   formData.append('selfie', selfieFile);
-  formData.append('telegram_id', String(telegramId));
+  if (telegramId) formData.append('telegram_id', String(telegramId));
 
   try {
     const res = await fetch(API + '/api/search', { method: 'POST', body: formData });
