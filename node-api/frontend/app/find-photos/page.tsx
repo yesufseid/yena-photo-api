@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 const API = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3001'
@@ -18,18 +18,8 @@ export default function FindPhotosPage() {
   const [groups, setGroups] = useState<Group[]>([])
   const [token, setToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [telegramId, setTelegramId] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-
-  useEffect(() => {
-    try {
-      const tg = window.Telegram?.WebApp
-      if (tg?.initDataUnsafe?.user) {
-        setTelegramId(tg.initDataUnsafe.user.id)
-      }
-    } catch {}
-  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -46,7 +36,6 @@ export default function FindPhotosPage() {
 
     const formData = new FormData()
     formData.append('selfie', selfieFile)
-    formData.append('telegram_id', String(telegramId || ''))
 
     try {
       const res = await fetch(`${API}/api/search`, {
@@ -71,35 +60,7 @@ export default function FindPhotosPage() {
     }
   }
 
-  const sendGroup = async (date: string) => {
-    if (!token) return
-    setStep('sending')
-
-    try {
-      const res = await fetch(`${API}/api/results/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, date }),
-      })
-      const data = await res.json()
-
-      if (data.success) {
-        setStep('sent')
-      } else {
-        setError(data.error || 'Failed to send')
-        setStep('results')
-      }
-    } catch {
-      setError('Network error')
-      setStep('results')
-    }
-  }
-
-  const closeApp = () => {
-    try { window.Telegram?.WebApp.close() } catch {}
-  }
-
-  const styles: Record<string, React.CSSProperties> = {
+  const s: Record<string, React.CSSProperties> = {
     container: {
       minHeight: '100vh',
       background: '#0f0f1a',
@@ -118,19 +79,6 @@ export default function FindPhotosPage() {
       padding: '12px 0',
       marginBottom: '16px',
     },
-    backBtn: {
-      background: 'none',
-      border: 'none',
-      color: '#4f9cf7',
-      fontSize: '0.95rem',
-      cursor: 'pointer',
-      padding: '4px 8px',
-    },
-    title: {
-      fontSize: '1.3rem',
-      fontWeight: 700,
-      margin: 0,
-    },
     card: {
       background: '#16213e',
       borderRadius: '14px',
@@ -143,126 +91,54 @@ export default function FindPhotosPage() {
       marginBottom: '12px',
       color: '#fff',
     },
-    selfiePreview: {
-      width: '180px',
-      height: '180px',
-      borderRadius: '50%',
-      border: `3px dashed ${selfiePreview ? '#22c55e' : '#334155'}`,
+    preview: {
+      width: '180px', height: '180px', borderRadius: '50%',
+      border: `3px dashed #334155`,
       borderStyle: selfiePreview ? 'solid' : 'dashed',
-      overflow: 'hidden',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      cursor: 'pointer',
-      background: '#1a1a2e',
+      borderColor: selfiePreview ? '#22c55e' : '#334155',
+      overflow: 'hidden', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', cursor: 'pointer', background: '#1a1a2e',
       margin: '0 auto 16px',
     },
-    selfiePlaceholder: {
-      textAlign: 'center',
-      color: '#8899aa',
-      fontSize: '0.85rem',
-    },
     btn: {
-      width: '100%',
-      padding: '14px',
-      border: 'none',
-      borderRadius: '10px',
-      fontSize: '1rem',
-      fontWeight: 600,
-      cursor: 'pointer',
-      textAlign: 'center' as const,
-      transition: 'all 0.2s',
-    },
-    btnPrimary: {
-      background: '#4f9cf7',
-      color: '#fff',
-    },
-    btnSuccess: {
-      background: '#22c55e',
-      color: '#fff',
-    },
-    btnOutline: {
-      background: 'transparent',
-      color: '#4f9cf7',
-      border: '1px solid #4f9cf7',
+      width: '100%', padding: '14px', border: 'none', borderRadius: '10px',
+      fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
     },
     groupItem: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '14px',
-      background: '#1a1a2e',
-      borderRadius: '10px',
-      cursor: 'pointer',
-      marginBottom: '8px',
-      transition: 'background 0.2s',
-    },
-    errorText: {
-      color: '#ef4444',
-      fontSize: '0.85rem',
-      marginTop: '8px',
-      textAlign: 'center' as const,
-    },
-    resultCount: {
-      textAlign: 'center' as const,
-      padding: '24px 0',
-    },
-    resultNumber: {
-      fontSize: '3rem',
-      fontWeight: 800,
-      color: '#22c55e',
-    },
-    resultLabel: {
-      fontSize: '1rem',
-      color: '#8899aa',
-      marginTop: '4px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '14px', background: '#1a1a2e', borderRadius: '10px',
+      cursor: 'pointer', marginBottom: '8px',
     },
   }
 
   if (step === 'selfie') {
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <button style={styles.backBtn} onClick={() => router.push('/')}>← Back</button>
-          <h1 style={styles.title}>Find Your Photo</h1>
+      <div style={s.container}>
+        <div style={s.header}>
+          <button style={{ background: 'none', border: 'none', color: '#4f9cf7', fontSize: '0.95rem', cursor: 'pointer' }} onClick={() => router.push('/')}>
+            ← Back
+          </button>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: 700 }}>Find Your Photo</h1>
         </div>
-
-        <div style={styles.card}>
-          <div style={styles.cardTitle}>Upload your selfie</div>
-          <div
-            style={styles.selfiePreview}
-            onClick={() => inputRef.current?.click()}
-          >
+        <div style={s.card}>
+          <div style={s.cardTitle}>Upload your selfie</div>
+          <div style={s.preview} onClick={() => inputRef.current?.click()}>
             {selfiePreview ? (
               <img src={selfiePreview} alt="selfie" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <div style={styles.selfiePlaceholder}>
+              <div style={{ textAlign: 'center', color: '#8899aa', fontSize: '0.85rem' }}>
                 <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '4px' }}>📷</span>
                 Tap to take a selfie
               </div>
             )}
           </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            capture="user"
-            hidden
-            onChange={handleFileSelect}
-          />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button style={{ ...styles.btn, ...styles.btnOutline, flex: 1 }} onClick={() => inputRef.current?.click()}>
-              📷 Choose Photo
-            </button>
-          </div>
-          {error && <div style={styles.errorText}>{error}</div>}
+          <input ref={inputRef} type="file" accept="image/*" capture="user" hidden onChange={handleFileSelect} />
+          <button style={{ ...s.btn, background: 'transparent', color: '#4f9cf7', border: '1px solid #4f9cf7' }} onClick={() => inputRef.current?.click()}>
+            📷 Choose Photo
+          </button>
+          {error && <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '8px', textAlign: 'center' }}>{error}</div>}
         </div>
-
-        <button
-          style={{ ...styles.btn, ...styles.btnPrimary, opacity: selfieFile ? 1 : 0.4 }}
-          disabled={!selfieFile}
-          onClick={startSearch}
-        >
+        <button style={{ ...s.btn, background: '#4f9cf7', color: '#fff', opacity: selfieFile ? 1 : 0.4 }} disabled={!selfieFile} onClick={startSearch}>
           Search
         </button>
       </div>
@@ -271,7 +147,7 @@ export default function FindPhotosPage() {
 
   if (step === 'searching') {
     return (
-      <div style={styles.container}>
+      <div style={s.container}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 0' }}>
           <div style={{ width: '60px', height: '60px', border: '4px solid #334155', borderTopColor: '#4f9cf7', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: '20px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -284,57 +160,42 @@ export default function FindPhotosPage() {
 
   if (step === 'results') {
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Results</h1>
+      <div style={s.container}>
+        <div style={s.header}><h1 style={{ fontSize: '1.3rem', fontWeight: 700 }}>Results</h1></div>
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 800, color: '#22c55e' }}>{totalCount}</div>
+          <div style={{ fontSize: '1rem', color: '#8899aa', marginTop: '4px' }}>{totalCount === 1 ? 'photo found' : 'photos found'}</div>
         </div>
-
-        <div style={styles.resultCount}>
-          <div style={styles.resultNumber}>{totalCount}</div>
-          <div style={styles.resultLabel}>{totalCount === 1 ? 'photo found' : 'photos found'}</div>
-        </div>
-
         {groups.length > 0 && (
-          <div style={styles.card}>
-            <div style={styles.cardTitle}>Select by date</div>
+          <div style={s.card}>
+            <div style={s.cardTitle}>Select by date</div>
             {groups.map((g) => (
-              <div
-                key={g.date}
-                style={styles.groupItem}
-                onClick={() => sendGroup(g.date)}
+              <div key={g.date} style={s.groupItem}
+                onClick={() => { setStep('sending'); sendGroup(g.date) }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(79,156,247,0.15)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#1a1a2e')}
               >
                 <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{g.date}</span>
-                <span style={{ color: '#4f9cf7', fontWeight: 600, fontSize: '0.9rem' }}>
-                  {g.count} {g.count === 1 ? 'photo' : 'photos'}
-                </span>
+                <span style={{ color: '#4f9cf7', fontWeight: 600, fontSize: '0.9rem' }}>{g.count} {g.count === 1 ? 'photo' : 'photos'}</span>
               </div>
             ))}
           </div>
         )}
-
-        {totalCount > 0 && (
-          <button style={{ ...styles.btn, ...styles.btnSuccess, marginTop: 'auto' }} onClick={() => sendGroup('')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', paddingBottom: '20px' }}>
+          <button style={{ ...s.btn, background: '#22c55e', color: '#fff' }} onClick={() => { setStep('sending'); sendGroup('') }}>
             📨 Send All to Telegram
           </button>
-        )}
-
-        <button
-          style={{ ...styles.btn, ...styles.btnOutline, marginTop: '12px' }}
-          onClick={() => { setStep('selfie'); setSelfieFile(null); setSelfiePreview(null); setError(null) }}
-        >
-          🔄 Search Again
-        </button>
-
-        {error && <div style={styles.errorText}>{error}</div>}
+          <button style={{ ...s.btn, background: 'transparent', color: '#4f9cf7', border: '1px solid #4f9cf7' }} onClick={() => { setStep('selfie'); setSelfieFile(null); setSelfiePreview(null); setError(null) }}>
+            🔄 Search Again
+          </button>
+        </div>
       </div>
     )
   }
 
   if (step === 'sending') {
     return (
-      <div style={styles.container}>
+      <div style={s.container}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 0' }}>
           <div style={{ width: '60px', height: '60px', border: '4px solid #334155', borderTopColor: '#4f9cf7', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: '20px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -345,16 +206,28 @@ export default function FindPhotosPage() {
     )
   }
 
+  async function sendGroup(date: string) {
+    if (!token) return
+    try {
+      const res = await fetch(`${API}/api/results/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, date }),
+      })
+      const data = await res.json()
+      if (data.success) setStep('sent')
+      else { setError(data.error || 'Failed to send'); setStep('results') }
+    } catch { setError('Network error'); setStep('results') }
+  }
+
   return (
-    <div style={styles.container}>
+    <div style={s.container}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px' }}>
         <div style={{ fontSize: '3.5rem', marginBottom: '16px' }}>✅</div>
         <h2 style={{ marginBottom: '8px', color: '#22c55e' }}>Photos Sent!</h2>
-        <p style={{ color: '#8899aa', marginBottom: '24px', fontSize: '0.95rem' }}>
-          Your photos are being sent in Telegram.
-        </p>
-        <button style={{ ...styles.btn, ...styles.btnOutline }} onClick={closeApp}>
-          Close
+        <p style={{ color: '#8899aa', marginBottom: '24px', fontSize: '0.95rem' }}>Your photos are being sent in Telegram.</p>
+        <button style={{ background: 'transparent', color: '#4f9cf7', border: '1px solid #4f9cf7', width: '100%', padding: '14px', borderRadius: '10px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => router.push('/')}>
+          Back Home
         </button>
       </div>
     </div>

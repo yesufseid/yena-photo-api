@@ -24,7 +24,7 @@ function registerCommands(bot) {
     );
     clearState(ctx.chat.id);
 
-    const waUrl = process.env.BASE_URL || "https://yena-photo.vercel.app/";
+    const waUrl = (process.env.BASE_URL || "http://localhost:3001").replace(/\/+$/, "") + "/app";
 
     const keyboard = {
       keyboard: [
